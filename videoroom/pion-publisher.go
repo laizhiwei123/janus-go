@@ -10,28 +10,33 @@ import (
 	"github.com/newzai/janus-go/logging"
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v2"
+	"github.com/pion/webrtc/v2/pkg/media"
 	"github.com/pkg/errors"
 )
 
-//Track track
+// Track track
 type Track struct {
 	track *webrtc.Track
 	seqNo uint16
 }
 
-//WriteRTP write rtp
+// WriteRTP write rtp
 func (t *Track) WriteRTP(packet *rtp.Packet) error {
 	t.seqNo++
 	packet.SequenceNumber = t.seqNo
 	return t.track.WriteRTP(packet)
 }
 
-//SSRC return ssrc
+// SSRC return ssrc
 func (t *Track) SSRC() uint32 {
 	return t.track.SSRC()
 }
 
-//Publisher a publisher user,
+func (t *Track) WriteSample(s media.Sample) error {
+	return t.track.WriteSample(s)
+}
+
+// Publisher a publisher user,
 type Publisher struct {
 	BaseSession
 	jPub    *jvideoroom.Publisher
@@ -39,17 +44,17 @@ type Publisher struct {
 	senders []*webrtc.RTPSender
 }
 
-//PublisherOption option
+// PublisherOption option
 type PublisherOption func(*Publisher)
 
-//WithPublisherConfigure set webrtc configure
+// WithPublisherConfigure set webrtc configure
 func WithPublisherConfigure(configure webrtc.Configuration) PublisherOption {
 	return func(p *Publisher) {
 		p.configure = configure
 	}
 }
 
-//NewPublisher new publihser
+// NewPublisher new publihser
 func NewPublisher(ctx context.Context, api *webrtc.API, h *jwsapi.Handle, room uint64, opts ...jvideoroom.PublisherOption) *Publisher {
 	p := &Publisher{
 		BaseSession: BaseSession{
@@ -66,17 +71,17 @@ func NewPublisher(ctx context.Context, api *webrtc.API, h *jwsapi.Handle, room u
 	return p
 }
 
-//Object return jvideoroom.Publisher
+// Object return jvideoroom.Publisher
 func (p *Publisher) Object() *jvideoroom.Publisher {
 	return p.jPub
 }
 
-//ID return id info
+// ID return id info
 func (p *Publisher) ID() string {
 	return fmt.Sprintf("[%d.%d]", p.jPub.Room(), p.jPub.ID())
 }
 
-//SetOption set option
+// SetOption set option
 func (p *Publisher) SetOption(opts ...PublisherOption) *Publisher {
 	for _, opt := range opts {
 		opt(p)
@@ -84,13 +89,13 @@ func (p *Publisher) SetOption(opts ...PublisherOption) *Publisher {
 	return p
 }
 
-//Join join to the
+// Join join to the
 func (p *Publisher) Join(opts ...jwsapi.MessageOption) error {
 	err := p.jPub.Join(opts...)
 	return err
 }
 
-//Publish start send stream
+// Publish start send stream
 func (p *Publisher) Publish(audio bool, video bool, opts ...jwsapi.MessageOption) error {
 
 	pc, err := p.api.NewPeerConnection(p.configure)
@@ -166,7 +171,7 @@ func (p *Publisher) Publish(audio bool, video bool, opts ...jwsapi.MessageOption
 	return nil
 }
 
-//Unpublish cancel publish
+// Unpublish cancel publish
 func (p *Publisher) Unpublish() error {
 
 	if p.pc != nil {
@@ -177,7 +182,7 @@ func (p *Publisher) Unpublish() error {
 	return p.jPub.Unpublish()
 }
 
-//GetTrack return track by kind
+// GetTrack return track by kind
 func (p *Publisher) GetTrack(kind webrtc.RTPCodecType) *Track {
 
 	switch kind {
