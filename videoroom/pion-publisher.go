@@ -14,6 +14,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	DefaultPayloadTypeVP8  = 96
+	DefaultPayloadTypeVP9  = 98
+	DefaultPayloadTypeH264 = 102
+)
+
 // Track track
 type Track struct {
 	track *webrtc.Track
@@ -96,7 +102,7 @@ func (p *Publisher) Join(opts ...jwsapi.MessageOption) error {
 }
 
 // Publish start send stream
-func (p *Publisher) Publish(audio bool, video bool, opts ...jwsapi.MessageOption) error {
+func (p *Publisher) Publish(audio bool, video bool, videoPayloadType uint8, opts ...jwsapi.MessageOption) error {
 
 	pc, err := p.api.NewPeerConnection(p.configure)
 	if err != nil {
@@ -125,7 +131,7 @@ func (p *Publisher) Publish(audio bool, video bool, opts ...jwsapi.MessageOption
 		return errors.Wrap(err, "AddTrack(Audio)")
 
 	}
-	videoTrack, err := pc.NewTrack(webrtc.DefaultPayloadTypeH264, rand.Uint32(), "video", "pionV0")
+	videoTrack, err := pc.NewTrack(videoPayloadType, rand.Uint32(), "video", "pionV0")
 	if err != nil {
 		pc.Close()
 		return errors.Wrap(err, "NewTrack(Video)")
